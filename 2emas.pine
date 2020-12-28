@@ -1,0 +1,4 @@
+//@version=4
+study("2 EMAs 10 20" , overlay=true)
+plot(ema(close,20),color = #2e79c9, linewidth=2)
+plot(ema(close,10),color = color.orange, linewidth=2)

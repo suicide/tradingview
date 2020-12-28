@@ -1,0 +1,7 @@
+//@version=4
+study("4 EMAs" , overlay=true)
+plot(ema(close,100),color = color.silver)
+plot(ema(close,55),color = color.red)
+plot(ema(close,21),color = color.yellow)
+plot(ema(close,13),color = color.green)
+plot(ema(close,8),color = color.blue)

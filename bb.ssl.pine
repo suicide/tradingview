@@ -1,0 +1,27 @@
+//@version=4
+study("Bollinger Bands + SSL channel + 50 EMA", overlay=true)
+
+// bb
+bbLen=input(title="BB Length", defval=20)
+bbDev=input(title="BB Deviation", defval=2)
+[middle, upper, lower] = bb(close, bbLen, bbDev)
+plot(middle, "BB Basis", color=#872323)
+bbp1 = plot(upper, "BB Upper", color=color.teal)
+bbp2 = plot(lower, "BB Lower", color=color.teal)
+fill(bbp1, bbp2, title = "BB Background", color=#198787, transp=95)
+
+//ssl channel
+period=input(title="SSL Period", defval=10)
+len=input(title="SSL length", defval=10)
+smaHigh=sma(high, len)
+smaLow=sma(low, len)
+float Hlv = na
+Hlv := close > smaHigh ? 1 : close < smaLow ? -1 : Hlv[1]
+sslDown = Hlv < 0 ? smaHigh: smaLow
+sslUp   = Hlv < 0 ? smaLow : smaHigh
+
+plot(sslDown, title="SSL Down", linewidth=2, color=color.red)
+plot(sslUp, title="SSL UP", linewidth=2, color=color.lime)
+
+ema50=input(title="EMA", defval=50)
+plot(ema(close,ema50), title="EMA" ,color = color.purple)
