@@ -1,5 +1,6 @@
 //@version=4
-study("4 EMAs" , overlay=true)
+study("6 EMAs 8 13 21 55 100 200" , overlay=true)
+plot(ema(close,200),color = color.black)
 plot(ema(close,100),color = color.silver)
 plot(ema(close,55),color = color.red)
 plot(ema(close,21),color = color.yellow)
