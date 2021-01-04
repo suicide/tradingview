@@ -1,0 +1,40 @@
+//@version=4
+study(title="2 Stochastic", shorttitle="2 Stoch", format=format.price, precision=2, resolution="")
+
+var lw = 2
+var tlw = 3
+
+// show
+show1 = input(title="Show Stoch 1", type=input.bool, defval=true)
+show2 = input(title="Show Stoch 2", type=input.bool, defval=true)
+
+// stoch 1
+periodK1 = input(14, title="K 1", minval=1)
+periodD1 = input(3, title="D 1", minval=1)
+smoothK1 = input(3, title="Smooth 1", minval=1)
+k1 = sma(stoch(close, high, low, periodK1), smoothK1)
+d1 = sma(k1, periodD1)
+
+// stoch 2
+periodK2 = input(4, title="K2", minval=1)
+periodD2 = input(3, title="D2", minval=1)
+smoothK2 = input(3, title="Smooth2", minval=1)
+k2 = sma(stoch(close, high, low, periodK2), smoothK2)
+d2 = sma(k2, periodD2)
+
+// draw
+plot(k1, title="%K1", color=#0094FF, linewidth=1, transp=show1 ? 0 : 100)
+plot(d1, title="%D1", color=#FF6A00, linewidth=1, transp=show1 ? 0 : 100)
+lw1 = k1 <= 20 or k1 >= 80 ? tlw : lw
+plot(crossover(k1, d1) ? k1 : na, title="Stoch 1 crossover", style=plot.style_cross, color=#0094FF, linewidth=lw, transp=show1 ? 0 : 100)
+plot(crossunder(k1, d1) ? k1 : na, title="Stoch 1 crossunder", style=plot.style_cross, color=#FF6A00, linewidth=lw, transp=show1 ? 0 : 100)
+
+plot(k2, title="%K2", color=#6EFF0D, linewidth=1, transp=show2 ? 0 : 100)
+plot(d2, title="%D2", color=#FF0D6E, linewidth=1, transp=show2 ? 0 : 100)
+plot(crossover(k2, d2) ? k2 : na, title="Stoch 2 crossover", style=plot.style_cross, color=#6EFF0D, linewidth=lw, transp=show2 ? 0 : 100)
+plot(crossunder(k2, d2) ? k2 : na, title="Stoch 2 crossunder", style=plot.style_cross, color=#FF0D6E, linewidth=lw, transp=show2 ? 0 : 100)
+
+// band
+h0 = hline(80, "Upper Band", color=#606060)
+h1 = hline(20, "Lower Band", color=#606060)
+fill(h0, h1, color=#9915FF, transp=80, title="Background")

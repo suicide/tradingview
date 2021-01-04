@@ -1,14 +1,14 @@
 //@version=4
-study("Bollinger Bands + SSL channel + 50/200 EMA", overlay=true)
+study("Donchain Channels + SSL channel + 50/200 EMA", overlay=true)
 
-// bb
-bbLen=input(title="BB Length", defval=20)
-bbDev=input(title="BB Deviation", defval=2)
-[middle, upper, lower] = bb(close, bbLen, bbDev)
-plot(middle, "BB Basis", color=#872323)
-bbp1 = plot(upper, "BB Upper", color=color.teal)
-bbp2 = plot(lower, "BB Lower", color=color.teal)
-fill(bbp1, bbp2, title = "BB Background", color=#198787, transp=95)
+length = input(20, minval=1)
+lower = lowest(length)
+upper = highest(length)
+basis = avg(upper, lower)
+plot(basis, "Basis", color=#FF6A00)
+u = plot(upper, "Upper", color=#0094FF)
+l = plot(lower, "Lower", color=#0094FF)
+fill(u, l, color=#0094FF, transp=95, title="Background")
 
 //ssl channel
 period=input(title="SSL Period", defval=10)

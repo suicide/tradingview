@@ -21,6 +21,11 @@ Rules apply to bullish long position.
 Another variant depending on winnings:
 
 - [ ] Stoch: in downwards trend D < K -> is negative
-- [ ] MACD: flattens from upwards trend to downwards
+- [ ] MACD: MACD line flattens from upwards trend to downwards
     losing positive momentum
+
+Another variant depending on winnings:
+
+- [ ] Stoch: in downwards trend D < K -> is negative (just crossed)
+- [ ] MACD: Histogram shows lower momentum, just piqued
 
