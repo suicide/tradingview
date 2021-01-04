@@ -1,14 +1,14 @@
 //@version=4
-study("Donchain Channels + SSL channel + 50/200 EMA", overlay=true)
+strategy("Donchain Channels + SSL channel + 50/200 EMA Strat", shorttitle="DC Strat", overlay=true)
 
 length = input(20, minval=1)
 lower = lowest(length)
 upper = highest(length)
 basis = avg(upper, lower)
 plot(basis, "Basis", color=#FF6A00)
-u = plot(upper, "Upper", color=#0094FF)
-l = plot(lower, "Lower", color=#0094FF)
-fill(u, l, color=#0094FF, transp=95, title="Background")
+u = plot(upper, "DC Upper", color=#0094FF)
+l = plot(lower, "DC Lower", color=#0094FF)
+fill(u, l, color=#0094FF, transp=95, title="DC Background")
 
 //ssl channel
 period=input(title="SSL Period", defval=10)
@@ -23,7 +23,37 @@ sslUp   = Hlv < 0 ? smaLow : smaHigh
 plot(sslDown, title="SSL Down", linewidth=1, color=color.red)
 plot(sslUp, title="SSL UP", linewidth=1, color=color.lime)
 
-ema50=input(title="50 EMA", defval=50)
-plot(ema(close,ema50), title="50 EMA" ,color = color.purple)
-ema200=input(title="200 EMA", defval=200)
-plot(ema(close,ema200), title="200 EMA" ,color = color.fuchsia)
+ema_short_len = input(title="Short EMA length", defval=50)
+ema_long_len = input(title="Long EMA length", defval=200)
+combined_uptrend = input(title="Use combinded EMA uptrend", type=input.bool, defval=false)
+stop_loss_delay = input(title="Stop Loss delay", defval=9)
+extreme_len = input(title="Min length since last lowest/highest", defval=13)
+
+ema_short = ema(close,ema_short_len)
+ema_long = ema(close,ema_long_len)
+plot(ema_short, title="Short EMA" ,color = color.purple)
+plot(ema_long, title="Long EMA" ,color = color.fuchsia)
+
+is_uptrend = if combined_uptrend
+    close >= ema_short and ema_short >= ema_long
+else
+    close >= ema_long
+
+signal_buy = upper[0] > upper[1] and lowest(upper, extreme_len) == upper[1] and close > ema_long
+stop_loss = lower[stop_loss_delay]
+
+signal_stop_loss = crossunder(close, stop_loss)
+
+signal_sell = lower[0] < lower[1] and highest(lower, extreme_len) == lower[1]
+
+plot(signal_buy ? upper : na, title="DC buy signal", style=plot.style_cross, color=color.yellow, linewidth=3)
+plot((signal_sell or signal_stop_loss) ? lower : na, title="DC sell signal", style=plot.style_cross, color=color.maroon, linewidth=3)
+
+if (signal_buy)
+    strategy.entry("DC Long", strategy.long)
+
+if (signal_stop_loss or signal_sell)
+    if (signal_stop_loss)
+        strategy.close("DC Long", comment="stop loss")
+    if (signal_sell)
+        strategy.close("DC Long", comment="close")

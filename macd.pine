@@ -1,5 +1,7 @@
 //@version=4
-study(title="Crossing MACD", shorttitle="MACD", resolution="")
+strategy(title="Crossing MACD Strategy", shorttitle="CMACD Strat")
+
+// MACD
 // Getting inputs
 fast_length = input(title="Fast Length", type=input.integer, defval=12)
 slow_length = input(title="Slow Length", type=input.integer, defval=26)
@@ -24,5 +26,35 @@ plot(hist, title="Histogram", style=plot.style_columns, color=(hist>=0 ? (hist[1
 plot(macd, title="MACD", color=col_macd, transp=0)
 plot(signal, title="Signal", color=col_signal, transp=0)
 
-plot(crossover(macd, signal) ? macd <= 0 ? macd : na : na, title="Low MACD crossover", style=plot.style_cross, color=#0094FF, linewidth=3)
-plot(crossunder(macd, signal) ? macd > 0 ? macd : na : na, title="High MACD crossunder", style=plot.style_cross, color=#FF6A00, linewidth=3)
+// Actual Strategy
+
+ema_short_length = input(title="Short EMA", type=input.integer, defval=100)
+ema_long_length = input(title="Long EMA", type=input.integer, defval=200)
+
+ema_short = ema(close, ema_short_length)
+ema_long = ema(close, ema_long_length)
+combined_uptrend = input(title="Use combinded EMA uptrend", type=input.bool, defval=false)
+sell_on_losing_momentum = input(title="Sell on losing momentum", type=input.bool, defval=false)
+
+is_uptrend = if combined_uptrend
+    close >= ema_short and ema_short >= ema_long
+else
+    close >= ema_long
+
+signal_buy = crossover(macd, signal) and macd <= 0 and is_uptrend
+
+default_signal_sell = crossunder(macd, signal) and macd > 0
+signal_sell = if (sell_on_losing_momentum)
+    signal > 0 and macd > 0 and hist[0] < hist[1]
+else
+    default_signal_sell
+
+
+plot(signal_buy ? macd : na, title="Low MACD crossover", style=plot.style_cross, color=#0094FF, linewidth=3)
+plot(signal_sell ? macd : na, title="High MACD crossunder", style=plot.style_cross, color=#FF6A00, linewidth=3)
+
+if (signal_buy)
+    strategy.entry("MACD Long", strategy.long)
+
+if (signal_sell)
+    strategy.close("MACD Long", comment="MACD close")
