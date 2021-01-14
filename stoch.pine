@@ -1,5 +1,5 @@
 //@version=4
-study(title="2 Stochastic", shorttitle="2 Stoch", format=format.price, precision=2, resolution="")
+study(title="2 Stochastic + RSI", shorttitle="2Stoch+rsi", format=format.price, precision=2, resolution="")
 
 var lw = 2
 var tlw = 3
@@ -35,6 +35,17 @@ plot(crossover(k2, d2) ? k2 : na, title="Stoch 2 crossover", style=plot.style_cr
 plot(crossunder(k2, d2) ? k2 : na, title="Stoch 2 crossunder", style=plot.style_cross, color=#FF0D6E, linewidth=lw, transp=show2 ? 0 : 100)
 
 // band
-h0 = hline(80, "Upper Band", color=#606060)
-h1 = hline(20, "Lower Band", color=#606060)
-fill(h0, h1, color=#9915FF, transp=80, title="Background")
+h0 = hline(80, "Stoch Upper Band", color=#606060)
+h1 = hline(20, "Stoch Lower Band", color=#606060)
+fill(h0, h1, color=#9915FF, transp=80, title="Stoch Background")
+
+// rsi
+rsi_len = input(4, minval=1, title="RSI Length")
+rsi_src = input(close, "Source", type = input.source)
+rsi_up = rma(max(change(rsi_src), 0), rsi_len)
+rsi_down = rma(-min(change(rsi_src), 0), rsi_len)
+rsi_rsi = rsi_down == 0 ? 100 : rsi_up == 0 ? 0 : 100 - (100 / (1 + rsi_up / rsi_down))
+plot(rsi_rsi, "RSI", color=color.white, linewidth=2, transp=80)
+rsi_band1 = hline(70, "RSI Upper Band", color=#C0C0C0)
+rsi_band0 = hline(30, "RSI Lower Band", color=#C0C0C0)
+fill(rsi_band1, rsi_band0, color=#9915FF, transp=100, title="RSI Background")

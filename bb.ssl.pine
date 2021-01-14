@@ -1,5 +1,5 @@
 //@version=4
-study("Bollinger Bands + SSL channel + 50/200 EMA", overlay=true)
+study("Bollinger Bands + SSL channel + 50/200 EMA + Potato", shorttitle="bb+ssl+ema+pot", overlay=true)
 
 // bb
 bbLen=input(title="BB Length", defval=20)
@@ -23,7 +23,74 @@ sslUp   = Hlv < 0 ? smaLow : smaHigh
 plot(sslDown, title="SSL Down", linewidth=1, color=color.red)
 plot(sslUp, title="SSL UP", linewidth=1, color=color.lime)
 
+// ema's
 ema50=input(title="50 EMA", defval=50)
 plot(ema(close,ema50), title="50 EMA" ,color = color.purple)
 ema200=input(title="200 EMA", defval=200)
 plot(ema(close,ema200), title="200 EMA" ,color = color.fuchsia)
+
+// potato
+potato_sources = input(defval=close, title="Potato Source")
+potato_isHA = input(false, "Potato Use HA Candles", input.bool)
+potato_heikenashi_1 = heikinashi(syminfo.tickerid)
+potato_security_1 = security(potato_heikenashi_1, timeframe.period, potato_sources)
+potato_src = potato_isHA ? potato_security_1 : potato_sources
+
+potato_per = input(defval=27, minval=1, title="Potato Sampling Period")
+
+// Range Multiplier
+potato_mult = input(defval=1.0, minval=0.1, title="Potato Range Multiplier")
+
+// Smooth Average Range
+potato_smoothrng(x, t, m) =>
+    wper = t * 2 - 1
+    avrng = ema(abs(x - x[1]), t)
+    smoothrng = ema(avrng, wper) * m
+    smoothrng
+potato_smrng = potato_smoothrng(potato_src, potato_per, potato_mult)
+
+// Range Filter
+potato_rngfilt(x, r) =>
+    rngfilt = x
+    rngfilt := x > nz(rngfilt[1]) ? x - r < nz(rngfilt[1]) ? nz(rngfilt[1]) : x - r : 
+       x + r > nz(rngfilt[1]) ? nz(rngfilt[1]) : x + r
+    rngfilt
+potato_filt = potato_rngfilt(potato_src, potato_smrng)
+
+// Filter Direction
+potato_upward = 0.0
+potato_upward := potato_filt > potato_filt[1] ? nz(potato_upward[1]) + 1 : potato_filt < potato_filt[1] ? 0 : nz(potato_upward[1])
+potato_downward = 0.0
+potato_downward := potato_filt < potato_filt[1] ? nz(potato_downward[1]) + 1 : potato_filt > potato_filt[1] ? 0 : nz(potato_downward[1])
+
+// Target Bands
+potato_hband = potato_filt + potato_smrng
+potato_lband = potato_filt - potato_smrng
+
+// Colors
+potato_filtcolor = potato_upward > 0 ? color.lime : potato_downward > 0 ? color.red : color.orange
+potato_barcolor = potato_src > potato_filt and potato_src > potato_src[1] and potato_upward > 0 ? color.lime :
+   potato_src > potato_filt and potato_src < potato_src[1] and potato_upward > 0 ? color.green :
+   potato_src < potato_filt and potato_src < potato_src[1] and potato_downward > 0 ? color.red :
+   potato_src < potato_filt and potato_src > potato_src[1] and potato_downward > 0 ? color.maroon : color.orange
+
+// Target
+potato_hbandplot = plot(potato_hband, color=color.aqua, transp=100, title="Potato High Target")
+potato_lbandplot = plot(potato_lband, color=color.fuchsia, transp=100, title="Potato Low Target")
+
+// Break Outs
+potato_longCond = bool(na)
+potato_shortCond = bool(na)
+potato_longCond := potato_src > potato_filt and potato_src > potato_src[1] and potato_upward > 0 or
+   potato_src > potato_filt and potato_src < potato_src[1] and potato_upward > 0
+potato_shortCond := potato_src < potato_filt and potato_src < potato_src[1] and potato_downward > 0 or
+   potato_src < potato_filt and potato_src > potato_src[1] and potato_downward > 0
+
+potato_CondIni = 0
+potato_CondIni := potato_longCond ? 1 : potato_shortCond ? -1 : potato_CondIni[1]
+potato_longCondition = potato_longCond and potato_CondIni[1] == -1
+potato_shortCondition = potato_shortCond and potato_CondIni[1] == 1
+
+//Alerts
+plotshape(potato_longCondition, title="Potato Buy Signal", text="buy🚀", textcolor=color.white, style=shape.labelup, size=size.small, location=location.belowbar, color=color.green, transp=0)
+plotshape(potato_shortCondition, title="Potato Sell Signal", text="sell⚠️️", textcolor=color.white, style=shape.labeldown, size=size.small, location=location.abovebar, color=color.red, transp=0)
