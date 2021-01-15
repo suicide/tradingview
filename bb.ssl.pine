@@ -1,5 +1,5 @@
 //@version=4
-study("Bollinger Bands + SSL channel + 50/200 EMA + Potato", shorttitle="bb+ssl+ema+pot", overlay=true)
+study("Bollinger Bands + SSL channel + 50/200 EMA + Potato + SuperTrend", shorttitle="bb+ssl+ema+pot+st", overlay=true)
 
 // bb
 bbLen=input(title="BB Length", defval=20)
@@ -94,3 +94,39 @@ potato_shortCondition = potato_shortCond and potato_CondIni[1] == 1
 //Alerts
 plotshape(potato_longCondition, title="Potato Buy Signal", text="buy🚀", textcolor=color.white, style=shape.labelup, size=size.small, location=location.belowbar, color=color.green, transp=0)
 plotshape(potato_shortCondition, title="Potato Sell Signal", text="sell⚠️️", textcolor=color.white, style=shape.labeldown, size=size.small, location=location.abovebar, color=color.red, transp=0)
+
+// Super Trend
+st_Periods = input(title="SuperTrend ATR Period", type=input.integer, defval=10)
+st_src = input(hl2, title="SuperTrend Source")
+st_Multiplier = input(title="SuperTrend ATR Multiplier", type=input.float, step=0.1, defval=3.0)
+st_changeATR= input(title="SuperTrend Change ATR Calculation Method ?", type=input.bool, defval=true)
+st_showsignals = input(title="SuperTrend Show Buy/Sell Signals ?", type=input.bool, defval=true)
+st_highlighting = input(title="SuperTrend Highlighter On/Off ?", type=input.bool, defval=true)
+st_atr2 = sma(tr, st_Periods)
+st_atr= st_changeATR ? atr(st_Periods) : st_atr2
+st_up=st_src-(st_Multiplier*st_atr)
+st_up1 = nz(st_up[1],st_up)
+st_up := close[1] > st_up1 ? max(st_up,st_up1) : st_up
+st_dn=st_src+(st_Multiplier*st_atr)
+st_dn1 = nz(st_dn[1], st_dn)
+st_dn := close[1] < st_dn1 ? min(st_dn, st_dn1) : st_dn
+st_trend = 1
+st_trend := nz(st_trend[1], st_trend)
+st_trend := st_trend == -1 and close > st_dn1 ? 1 : st_trend == 1 and close < st_up1 ? -1 : st_trend
+st_upPlot = plot(st_trend == 1 ? st_up : na, title="SuperTrend Up Trend", style=plot.style_linebr, linewidth=2, color=color.green)
+st_buySignal = st_trend == 1 and st_trend[1] == -1
+plotshape(st_buySignal ? st_up : na, title="SuperTrend UpTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.green, transp=0)
+plotshape(st_buySignal and st_showsignals ? st_up : na, title="SuperTrend Buy", text="Buy", location=location.absolute, style=shape.labelup, size=size.tiny, color=color.green, textcolor=color.white, transp=0)
+st_dnPlot = plot(st_trend == 1 ? na : st_dn, title="SuperTrend Down Trend", style=plot.style_linebr, linewidth=2, color=color.red)
+st_sellSignal = st_trend == -1 and st_trend[1] == 1
+plotshape(st_sellSignal ? st_dn : na, title="DownTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.red, transp=0)
+plotshape(st_sellSignal and st_showsignals ? st_dn : na, title="SuperTrend Sell", text="Sell", location=location.absolute, style=shape.labeldown, size=size.tiny, color=color.red, textcolor=color.white, transp=0)
+st_mPlot = plot(ohlc4, title="", style=plot.style_circles, linewidth=0)
+st_longFillColor = st_highlighting ? (st_trend == 1 ? color.green : color.white) : color.white
+st_shortFillColor = st_highlighting ? (st_trend == -1 ? color.red : color.white) : color.white
+fill(st_mPlot, st_upPlot, title="SuperTrend UpTrend Highligter", color=st_longFillColor)
+fill(st_mPlot, st_dnPlot, title="SuperTrend DownTrend Highligter", color=st_shortFillColor)
+alertcondition(st_buySignal, title="SuperTrend Buy", message="SuperTrend Buy!")
+alertcondition(st_sellSignal, title="SuperTrend Sell", message="SuperTrend Sell!")
+st_changeCond = st_trend != st_trend[1]
+alertcondition(st_changeCond, title="SuperTrend Direction Change", message="SuperTrend has changed direction!")
