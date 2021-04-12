@@ -1,7 +1,5 @@
 //@version=4
-strategy(title="Crossing MACD Strategy", shorttitle="CMACD Strat")
-
-// MACD
+study(title="Crossing MACD + Volume Heatmap", shorttitle="CMACD + VolHM", resolution="", max_bars_back=2000)
 // Getting inputs
 fast_length = input(title="Fast Length", type=input.integer, defval=12)
 slow_length = input(title="Slow Length", type=input.integer, defval=26)
@@ -26,35 +24,146 @@ plot(hist, title="Histogram", style=plot.style_columns, color=(hist>=0 ? (hist[1
 plot(macd, title="MACD", color=col_macd, transp=0)
 plot(signal, title="Signal", color=col_signal, transp=0)
 
-// Actual Strategy
-
-ema_short_length = input(title="Short EMA", type=input.integer, defval=100)
-ema_long_length = input(title="Long EMA", type=input.integer, defval=200)
-
-ema_short = ema(close, ema_short_length)
-ema_long = ema(close, ema_long_length)
-combined_uptrend = input(title="Use combinded EMA uptrend", type=input.bool, defval=false)
-sell_on_losing_momentum = input(title="Sell on losing momentum", type=input.bool, defval=false)
-
-is_uptrend = if combined_uptrend
-    close >= ema_short and ema_short >= ema_long
-else
-    close >= ema_long
-
-signal_buy = crossover(macd, signal) and macd <= 0 and is_uptrend
-
-default_signal_sell = crossunder(macd, signal) and macd > 0
-signal_sell = if (sell_on_losing_momentum)
-    signal > 0 and macd > 0 and hist[0] < hist[1]
-else
-    default_signal_sell
+plot(crossover(macd, signal) ? macd <= 0 ? macd : na : na, title="Low MACD crossover", style=plot.style_cross, color=#0094FF, linewidth=3)
+plot(crossunder(macd, signal) ? macd > 0 ? macd : na : na, title="High MACD crossunder", style=plot.style_cross, color=#FF6A00, linewidth=3)
 
 
-plot(signal_buy ? macd : na, title="Low MACD crossover", style=plot.style_cross, color=#0094FF, linewidth=3)
-plot(signal_sell ? macd : na, title="High MACD crossunder", style=plot.style_cross, color=#FF6A00, linewidth=3)
 
-if (signal_buy)
-    strategy.entry("MACD Long", strategy.long)
+// VOLUME HEATMAP
+//------------------------------------------------------------------------------
+// Inputs
 
-if (signal_sell)
-    strategy.close("MACD Long", comment="MACD close")
+
+hm_length          = input(610, title="Heatmap MA Length", type=input.integer, minval=2)
+hm_slength         = input(610, title='Heatmap Std Length', type=input.integer, minval=2)
+cmode           = input('Heatmap', 'Heatmap Color Mode', options=['Heatmap', 'Up/Down'])
+bcolor_enabled  = input(false, 'Heatmap Colored bars')
+
+thresholdExtraHigh  = input(4, title="Extra High Volume Threshold", type=input.float)
+thresholdHigh       = input(2.5, title="High Volume Threshold", type=input.float)
+thresholdMedium     = input(1, title="Medium Volume Threshold", type=input.float)
+thresholdNormal     = input(-0.5, title="Normal Volume Threshold", type=input.float)
+
+
+
+//------------------------------------------------------------------------------
+// Colors
+
+
+// heatmap colors
+chm1 = #ff0000 // extra high red
+chm2 = #ff7800 // high orange
+chm3 = #ffcf03 // medium yellow
+chm4 = #a0d6dc // normal
+chm5 = #1f9cac // low
+
+
+// heatmap colors
+chmthresholdExtraHigh = input(chm1, 'Heatmap Extra High')
+chmthresholdHigh      = input(chm2, 'Heatmap High')
+chmthresholdMedium    = input(chm3, 'Heatmap Medium')
+chmthresholdNormal    = input(chm4, 'Heatmap Normal')
+chmthresholdLow       = input(chm5, 'Heatmap Low')
+
+
+// up colors
+cupthresholdExtraHigh = input(#00FF00, 'Heatmap Up Extra High')
+cupthresholdHigh      = input(#30FF30, 'Heatmap Up High')
+cupthresholdMedium    = input(#60FF60, 'Heatmap Up Medium')
+cupthresholdNormal    = input(#8FFF8F, 'Heatmap Up Normal')
+cupthresholdLow       = input(#BFFFBF, 'Heatmap Up Low')
+
+
+// down colors
+cdnthresholdExtraHigh = input(#FF0000, 'Heatmap Down Extra High')
+cdnthresholdHigh      = input(#FF3030, 'Heatmap Down High')
+cdnthresholdMedium    = input(#FF6060, 'Heatmap Down Medium')
+cdnthresholdNormal    = input(#FF8F8F, 'Heatmap Down Normal')
+cdnthresholdLow       = input(#FFBFBF, 'Heatmap Down Low')
+
+
+// threshold colors
+cthresholdExtraHighUp = cmode == 'Heatmap' ? chmthresholdExtraHigh : cupthresholdExtraHigh
+cthresholdHighUp      = cmode == 'Heatmap' ? chmthresholdHigh : cupthresholdHigh
+cthresholdMediumUp    = cmode == 'Heatmap' ? chmthresholdMedium : cupthresholdMedium
+cthresholdNormalUp    = cmode == 'Heatmap' ? chmthresholdNormal : cupthresholdNormal
+cthresholdLowUp       = cmode == 'Heatmap' ? chmthresholdLow : cupthresholdLow
+
+cthresholdExtraHighDn = cmode == 'Heatmap' ? chmthresholdExtraHigh : cdnthresholdExtraHigh
+cthresholdHighDn      = cmode == 'Heatmap' ? chmthresholdHigh : cdnthresholdHigh
+cthresholdMediumDn    = cmode == 'Heatmap' ? chmthresholdMedium : cdnthresholdMedium
+cthresholdNormalDn    = cmode == 'Heatmap' ? chmthresholdNormal : cdnthresholdNormal
+cthresholdLowDn       = cmode == 'Heatmap' ? chmthresholdLow : cdnthresholdLow
+
+
+
+//------------------------------------------------------------------------------
+// Calcs
+
+
+hm_length := hm_length > bar_index + 1 ? bar_index + 1 : hm_length
+hm_slength := hm_slength > bar_index + 1 ? bar_index + 1 : hm_slength
+
+
+pstdev(Series, Period) =>
+    mean = sum(Series, Period) / Period
+    summation = 0.0
+    for i=0 to Period-1
+        sampleMinusMean = nz(Series[i]) - mean
+        summation := summation + sampleMinusMean * sampleMinusMean
+    return = sqrt(summation / Period)
+
+
+mean    = sma(volume, hm_length)
+std     = pstdev(volume, hm_slength)
+stdbar  = (volume - mean) / std
+dir     = close > open
+
+
+bcolor = stdbar > thresholdExtraHigh ? dir ? cthresholdExtraHighUp : cthresholdExtraHighDn :
+  stdbar > thresholdHigh  ? dir ? cthresholdHighUp : cthresholdHighDn :
+  stdbar > thresholdMedium ? dir ? cthresholdMediumUp : cthresholdMediumDn :
+  stdbar > thresholdNormal ? dir ? cthresholdNormalUp : cthresholdNormalDn :
+  dir ? cthresholdLowUp : cthresholdLowDn
+
+
+//------------------------------------------------------------------------------
+// Plots
+bgcolor(color=bcolor,transp=75)
+
+barcolor(bcolor_enabled ? bcolor : na, editable=false)
+
+
+// volume
+//plot(v, color=bcolor, style=plot.style_columns, title='Volume', transp=0, editable=false)
+
+//------------------------------------------------------------------------------
+// Alerts
+
+
+conditionExtraHigh  = stdbar > thresholdExtraHigh
+conditionHigh       = stdbar <= thresholdExtraHigh and stdbar > thresholdHigh 
+conditionMedium     = stdbar <= thresholdHigh and stdbar > thresholdMedium
+conditionNormal     = stdbar <= thresholdMedium and stdbar > thresholdNormal
+conditionLow        = stdbar <= thresholdNormal
+
+alertcondition(conditionExtraHigh, title='Any Extra High Vol', message='Any Bar Extra High Volume Threshold')
+alertcondition(conditionExtraHigh and open < close, title='Up Extra High', message='Up Bar Extra High Volume Threshold')
+alertcondition(conditionExtraHigh and open > close, title='Down Extra High', message='Down Bar Extra High Volume Threshold')
+
+alertcondition(conditionHigh, title='Any High Vol', message='Any Bar High Volume Threshold')
+alertcondition(conditionHigh and open < close, title='Up High Vol', message='Up Bar High Volume Threshold')
+alertcondition(conditionHigh and open > close, title='Down High Vol', message='Down Bar High Volume Threshold')
+
+alertcondition(conditionMedium, title='Any Medium Vol', message='Any Bar Medium Volume Threshold')
+alertcondition(conditionMedium and open < close, title='Up Medium Vol', message='Up Bar Medium Volume Threshold')
+alertcondition(conditionMedium and open > close, title='Down Medium Vol', message='Down Bar Medium Volume Threshold')
+
+
+// wolfpack
+// close distance to ma 21
+wp_src = hlc3
+wp_ma = vwma(wp_src, 21)
+wolfpack = wp_src - wp_ma
+wp_color = wolfpack >= 0 ? color.green : color.red
+plot(wolfpack, title="Wolfpack", color=wp_color, linewidth=2)

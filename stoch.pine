@@ -40,7 +40,7 @@ h1 = hline(20, "Stoch Lower Band", color=#606060)
 fill(h0, h1, color=#9915FF, transp=80, title="Stoch Background")
 
 // rsi
-rsi_len = input(4, minval=1, title="RSI Length")
+rsi_len = input(14, minval=1, title="RSI Length")
 rsi_src = input(close, "Source", type = input.source)
 rsi_up = rma(max(change(rsi_src), 0), rsi_len)
 rsi_down = rma(-min(change(rsi_src), 0), rsi_len)

@@ -29,6 +29,9 @@ plot(ema(close,ema50), title="50 EMA" ,color = color.purple)
 ema200=input(title="200 EMA", defval=200)
 plot(ema(close,ema200), title="200 EMA" ,color = color.fuchsia)
 
+// vwap
+plot(vwap(hlc3), title="VWAP", color = color.blue)
+
 // potato
 potato_sources = input(defval=close, title="Potato Source")
 potato_isHA = input(false, "Potato Use HA Candles", input.bool)
@@ -92,8 +95,8 @@ potato_longCondition = potato_longCond and potato_CondIni[1] == -1
 potato_shortCondition = potato_shortCond and potato_CondIni[1] == 1
 
 //Alerts
-plotshape(potato_longCondition, title="Potato Buy Signal", text="buy🚀", textcolor=color.white, style=shape.labelup, size=size.small, location=location.belowbar, color=color.green, transp=0)
-plotshape(potato_shortCondition, title="Potato Sell Signal", text="sell⚠️️", textcolor=color.white, style=shape.labeldown, size=size.small, location=location.abovebar, color=color.red, transp=0)
+plotshape(potato_longCondition, title="Potato Buy Signal", text="buy", textcolor=color.white, style=shape.triangleup, size=size.tiny, location=location.belowbar, color=color.green, transp=0)
+plotshape(potato_shortCondition, title="Potato Sell Signal", text="sell", textcolor=color.white, style=shape.triangledown, size=size.tiny, location=location.abovebar, color=color.red, transp=0)
 
 // Super Trend
 st_Periods = input(title="SuperTrend ATR Period", type=input.integer, defval=10)

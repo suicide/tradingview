@@ -1,0 +1,13 @@
+f_rsimfi(_period, _multiplier, _tf) => 
+
+    data = heikinashi(syminfo.tickerid)
+    o = security(data, timeframe.period, open)
+    h = security(data, timeframe.period, high)
+    l = security(data, timeframe.period, low)
+    c = security(data, timeframe.period, close)
+    security(syminfo.tickerid, _tf, sma(((c - o) / (h - l)) * _multiplier, _period) - rsiMFIPosY)
+
+
+
+
+f_rsimfi(_period, _multiplier, _tf) => security(syminfo.tickerid, _tf, hma(((close - open) / (high - low)) * _multiplier, _period) - rsiMFIPosY)
