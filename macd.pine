@@ -1,5 +1,5 @@
 //@version=4
-study(title="Crossing MACD + Volume Heatmap", shorttitle="CMACD + VolHM", resolution="", max_bars_back=2000)
+study(title="Crossing MACD + Volume Heatmap + wolfpack", shorttitle="CMACD + VolHM + Wolf", resolution="", max_bars_back=2000)
 // Getting inputs
 fast_length = input(title="Fast Length", type=input.integer, defval=12)
 slow_length = input(title="Slow Length", type=input.integer, defval=26)
@@ -161,9 +161,9 @@ alertcondition(conditionMedium and open > close, title='Down Medium Vol', messag
 
 
 // wolfpack
-// close distance to ma 21
-wp_src = hlc3
-wp_ma = vwma(wp_src, 21)
-wolfpack = wp_src - wp_ma
-wp_color = wolfpack >= 0 ? color.green : color.red
+wolfpack_fast_ma = ema(src, 3)
+wolfpack_slow_ma = ema(src, 8)
+wolfpack = wolfpack_fast_ma - wolfpack_slow_ma
+
+wp_color = wolfpack >= 0 ? #00ff00 : #ff0000
 plot(wolfpack, title="Wolfpack", color=wp_color, linewidth=2)
