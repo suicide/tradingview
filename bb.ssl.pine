@@ -1,5 +1,5 @@
 //@version=4
-study("Bollinger Bands + SSL channel + 50/200 EMA + Potato + SuperTrend", shorttitle="bb+ssl+ema+pot+st", overlay=true)
+study("Bollinger Bands + SSL channel + 50/200 EMA + SuperTrend + Camarilla", shorttitle="bb+ssl+ema+st+cam", overlay=true)
 
 // bb
 bbLen=input(title="BB Length", defval=20)
@@ -8,7 +8,7 @@ bbDev=input(title="BB Deviation", defval=2)
 plot(middle, "BB Basis", color=#872323)
 bbp1 = plot(upper, "BB Upper", color=color.teal)
 bbp2 = plot(lower, "BB Lower", color=color.teal)
-fill(bbp1, bbp2, title = "BB Background", color=#198787, transp=95)
+fill(bbp1, bbp2, title = "BB Background", color=color.new(#198787, 95))
 
 //ssl channel
 period=input(title="SSL Period", defval=10)
@@ -24,79 +24,22 @@ plot(sslDown, title="SSL Down", linewidth=1, color=color.red)
 plot(sslUp, title="SSL UP", linewidth=1, color=color.lime)
 
 // ema's
-ema50=input(title="50 EMA", defval=50)
-plot(ema(close,ema50), title="50 EMA" ,color = color.purple)
-ema200=input(title="200 EMA", defval=200)
-plot(ema(close,ema200), title="200 EMA" ,color = color.fuchsia)
+ema1=input(title="EMA 1", defval=50)
+plot(ema(close,ema1), title="EMA 1" ,color = color.purple)
+ema2=input(title="EMA 2", defval=200)
+plot(ema(close,ema2), title="EMA 2" ,color = color.fuchsia)
+ema3=input(title="EMA 3", defval=200)
+plot(ema(close,ema3), title="EMA 3" ,color = color.purple, display=display.none)
+ema4=input(title="EMA 4", defval=200)
+plot(ema(close,ema4), title="EMA 4" ,color = color.purple, display=display.none)
+ema5=input(title="EMA 5", defval=200)
+plot(ema(close,ema5), title="EMA 5" ,color = color.purple, display=display.none)
+ema6=input(title="EMA 4", defval=200)
+plot(ema(close,ema6), title="EMA 6" ,color = color.purple, display=display.none)
 
 // vwap
-plot(vwap(hlc3), title="VWAP", color = color.blue)
+plot(vwap(hlc3), title="VWAP", color = color.blue, linewidth=2)
 
-// potato
-potato_sources = input(defval=close, title="Potato Source")
-potato_isHA = input(false, "Potato Use HA Candles", input.bool)
-potato_heikenashi_1 = heikinashi(syminfo.tickerid)
-potato_security_1 = security(potato_heikenashi_1, timeframe.period, potato_sources)
-potato_src = potato_isHA ? potato_security_1 : potato_sources
-
-potato_per = input(defval=27, minval=1, title="Potato Sampling Period")
-
-// Range Multiplier
-potato_mult = input(defval=1.0, minval=0.1, title="Potato Range Multiplier")
-
-// Smooth Average Range
-potato_smoothrng(x, t, m) =>
-    wper = t * 2 - 1
-    avrng = ema(abs(x - x[1]), t)
-    smoothrng = ema(avrng, wper) * m
-    smoothrng
-potato_smrng = potato_smoothrng(potato_src, potato_per, potato_mult)
-
-// Range Filter
-potato_rngfilt(x, r) =>
-    rngfilt = x
-    rngfilt := x > nz(rngfilt[1]) ? x - r < nz(rngfilt[1]) ? nz(rngfilt[1]) : x - r : 
-       x + r > nz(rngfilt[1]) ? nz(rngfilt[1]) : x + r
-    rngfilt
-potato_filt = potato_rngfilt(potato_src, potato_smrng)
-
-// Filter Direction
-potato_upward = 0.0
-potato_upward := potato_filt > potato_filt[1] ? nz(potato_upward[1]) + 1 : potato_filt < potato_filt[1] ? 0 : nz(potato_upward[1])
-potato_downward = 0.0
-potato_downward := potato_filt < potato_filt[1] ? nz(potato_downward[1]) + 1 : potato_filt > potato_filt[1] ? 0 : nz(potato_downward[1])
-
-// Target Bands
-potato_hband = potato_filt + potato_smrng
-potato_lband = potato_filt - potato_smrng
-
-// Colors
-potato_filtcolor = potato_upward > 0 ? color.lime : potato_downward > 0 ? color.red : color.orange
-potato_barcolor = potato_src > potato_filt and potato_src > potato_src[1] and potato_upward > 0 ? color.lime :
-   potato_src > potato_filt and potato_src < potato_src[1] and potato_upward > 0 ? color.green :
-   potato_src < potato_filt and potato_src < potato_src[1] and potato_downward > 0 ? color.red :
-   potato_src < potato_filt and potato_src > potato_src[1] and potato_downward > 0 ? color.maroon : color.orange
-
-// Target
-potato_hbandplot = plot(potato_hband, color=color.aqua, transp=100, title="Potato High Target")
-potato_lbandplot = plot(potato_lband, color=color.fuchsia, transp=100, title="Potato Low Target")
-
-// Break Outs
-potato_longCond = bool(na)
-potato_shortCond = bool(na)
-potato_longCond := potato_src > potato_filt and potato_src > potato_src[1] and potato_upward > 0 or
-   potato_src > potato_filt and potato_src < potato_src[1] and potato_upward > 0
-potato_shortCond := potato_src < potato_filt and potato_src < potato_src[1] and potato_downward > 0 or
-   potato_src < potato_filt and potato_src > potato_src[1] and potato_downward > 0
-
-potato_CondIni = 0
-potato_CondIni := potato_longCond ? 1 : potato_shortCond ? -1 : potato_CondIni[1]
-potato_longCondition = potato_longCond and potato_CondIni[1] == -1
-potato_shortCondition = potato_shortCond and potato_CondIni[1] == 1
-
-//Alerts
-plotshape(potato_longCondition, title="Potato Buy Signal", text="buy", textcolor=color.white, style=shape.triangleup, size=size.tiny, location=location.belowbar, color=color.green, transp=0)
-plotshape(potato_shortCondition, title="Potato Sell Signal", text="sell", textcolor=color.white, style=shape.triangledown, size=size.tiny, location=location.abovebar, color=color.red, transp=0)
 
 // Super Trend
 st_Periods = input(title="SuperTrend ATR Period", type=input.integer, defval=10)
@@ -118,12 +61,12 @@ st_trend := nz(st_trend[1], st_trend)
 st_trend := st_trend == -1 and close > st_dn1 ? 1 : st_trend == 1 and close < st_up1 ? -1 : st_trend
 st_upPlot = plot(st_trend == 1 ? st_up : na, title="SuperTrend Up Trend", style=plot.style_linebr, linewidth=2, color=color.green)
 st_buySignal = st_trend == 1 and st_trend[1] == -1
-plotshape(st_buySignal ? st_up : na, title="SuperTrend UpTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.green, transp=0)
-plotshape(st_buySignal and st_showsignals ? st_up : na, title="SuperTrend Buy", text="Buy", location=location.absolute, style=shape.labelup, size=size.tiny, color=color.green, textcolor=color.white, transp=0)
+plotshape(st_buySignal ? st_up : na, title="SuperTrend UpTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.new(color.green, 0))
+plotshape(st_buySignal and st_showsignals ? st_up : na, title="SuperTrend Buy", text="Buy", location=location.absolute, style=shape.labelup, size=size.tiny, color=color.new(color.green,0), textcolor=color.white)
 st_dnPlot = plot(st_trend == 1 ? na : st_dn, title="SuperTrend Down Trend", style=plot.style_linebr, linewidth=2, color=color.red)
 st_sellSignal = st_trend == -1 and st_trend[1] == 1
-plotshape(st_sellSignal ? st_dn : na, title="DownTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.red, transp=0)
-plotshape(st_sellSignal and st_showsignals ? st_dn : na, title="SuperTrend Sell", text="Sell", location=location.absolute, style=shape.labeldown, size=size.tiny, color=color.red, textcolor=color.white, transp=0)
+plotshape(st_sellSignal ? st_dn : na, title="DownTrend Begins", location=location.absolute, style=shape.circle, size=size.tiny, color=color.new(color.red,0))
+plotshape(st_sellSignal and st_showsignals ? st_dn : na, title="SuperTrend Sell", text="Sell", location=location.absolute, style=shape.labeldown, size=size.tiny, color=color.new(color.red,0), textcolor=color.white)
 st_mPlot = plot(ohlc4, title="", style=plot.style_circles, linewidth=0)
 st_longFillColor = st_highlighting ? (st_trend == 1 ? color.green : color.white) : color.white
 st_shortFillColor = st_highlighting ? (st_trend == -1 ? color.red : color.white) : color.white
@@ -133,3 +76,178 @@ alertcondition(st_buySignal, title="SuperTrend Buy", message="SuperTrend Buy!")
 alertcondition(st_sellSignal, title="SuperTrend Sell", message="SuperTrend Sell!")
 st_changeCond = st_trend != st_trend[1]
 alertcondition(st_changeCond, title="SuperTrend Direction Change", message="SuperTrend has changed direction!")
+
+
+// Camarilla
+cam_showDaily = input(title="Show Camarilla", defval=true)
+cam_ptf = input(title="Pivot Resolution", defval="D", options=["Current","D","W","M","12M"])
+cam_showlast   = input(title = "Hide Historial", defval = false)
+cam_showlabels = input(title = "Show Labels", defval = true)
+cam_lstyle     = input(title = "Line Style", options = ['Solid', 'Circles', 'Cross'], defval ='Solid')
+cam_showWCPR = input(title="Show Weekly Levels", defval=false)
+cam_showTomorrow= input(title="Show Future Pivot,H3,L3", defval=true)
+
+cam_linestyle = cam_lstyle == 'Solid' ? plot.style_line :   cam_lstyle == 'Circles' ? plot.style_circles : plot.style_cross
+
+Round_it(x) =>
+    n = round(x / syminfo.mintick) * syminfo.mintick
+
+// Camarilla + CPR function
+camarillaData(t,tom) =>
+
+    highhtf = security(syminfo.tickerid, t, tom ? high : high[1],  lookahead = barmerge.lookahead_on)
+    lowhtf = security(syminfo.tickerid, t, tom ? low : low[1], lookahead = barmerge.lookahead_on)
+    closehtf = security(syminfo.tickerid, t, tom ? close : close[1], lookahead = barmerge.lookahead_on)
+    range = highhtf - lowhtf
+    islast = cam_showlast ? security(syminfo.tickerid, t, barstate.islast, lookahead = true) : true
+
+    H5 = (highhtf / lowhtf) * closehtf
+    H4 = closehtf + range * 1.1/2
+    H3 = closehtf + range * 1.1/4
+    H2 = closehtf + range * 1.1/6
+    H1 = closehtf + range * 1.1/12
+    H6 = H5 + 1.168 * (H5 - H4)
+
+    L1 = closehtf - range * 1.1/12
+    L2 = closehtf - range * 1.1/6
+    L3 = closehtf - range * 1.1/4
+    L4 = closehtf - range * 1.1/2
+    L5 = closehtf - (H5 - closehtf)
+    L6 = closehtf - (H6 - closehtf)
+
+    pivot = (highhtf + lowhtf + closehtf) / 3.0
+    bc = (highhtf + lowhtf) / 2.0
+    tc = pivot - bc + pivot
+    [islast,H6,  H5, H4, H3, H2, H1, L1, L2, L3, L4, L5 ,L6 , pivot , bc , tc]
+
+
+[dIsLast, dH6, dH5, dH4, dH3, dH2, dH1, dL1, dL2, dL3, dL4, dL5 , dL6 , dP , dPb , dPt] = camarillaData(cam_ptf,false)
+[tIsLast, tH6, tH5, tH4, tH3, tH2, tH1, tL1, tL2, tL3, tL4, tL5 , tL6 , tP , tPb , tPt] = camarillaData(cam_ptf,true)
+
+[wIsLast, wH6, wH5, wH4, wH3, wH2, wH1, wL1, wL2, wL3, wL4, wL5 , wL6 , wP , wPb , wPt] = camarillaData("W",false)
+[mIsLast, mH6, mH5, mH4, mH3, mH2, mH1, mL1, mL2, mL3, mL4, mL5 , mL6 , mP , mPb , mPt] = camarillaData("M",false)
+[yIsLast, yH6, yH5, yH4, yH3, yH2, yH1, yL1, yL2, yL3, yL4, yL5 , yL6 , yP , yPb , yPt] = camarillaData("12M",false)
+
+
+//W CPR
+cpr_trans = color.new(color.white , transp = 75)
+
+if cam_showWCPR
+    wcpr = line.new(time, wP , time + 60 * 60 * 24, wP, xloc=xloc.bar_time,color = color.white , style=line.style_dashed , extend=extend.right)
+    line.delete(wcpr[1])
+    wcprb = line.new(time, wPb , time + 60 * 60 * 24, wPb, xloc=xloc.bar_time,color = cpr_trans , style=line.style_dashed , extend=extend.right)
+    line.delete(wcprb[1])
+    wcprt = line.new(time, wPt , time + 60 * 60 * 24, wPt, xloc=xloc.bar_time,color = cpr_trans , style=line.style_dashed , extend=extend.right)
+    line.delete(wcprt[1])
+    wcprl = label.new(time , wP  , "                                                                                 Weekly Pivot : "+ tostring(Round_it(wP)) , xloc=xloc.bar_time, size=size.small,textcolor=color.white, style=label.style_none ,textalign = text.align_left )
+    label.delete(wcprl[1])
+
+    wh3 = line.new(time, wH3 , time + 60 * 60 * 24, wH3, xloc=xloc.bar_time,color = color.red , style=line.style_dashed , extend=extend.right)
+    line.delete(wh3[1])
+    wh3l = label.new(time , wH3  , "                                                                                 Weekly H3 : "+ tostring(Round_it(wH3)) , xloc=xloc.bar_time, size=size.small,textcolor=color.red, style=label.style_none ,textalign = text.align_left )
+    label.delete(wh3l[1])
+    wh4 = line.new(time, wH4 , time + 60 * 60 * 24, wH4, xloc=xloc.bar_time,color = color.red , style=line.style_dashed , extend=extend.right)
+    line.delete(wh4[1])
+    wh4l = label.new(time , wH4  , "                                                                                 Weekly H4 : "+ tostring(Round_it(wH4)) , xloc=xloc.bar_time, size=size.small,textcolor=color.red, style=label.style_none ,textalign = text.align_left )
+    label.delete(wh4l[1])
+    wh5 = line.new(time, wH5 , time + 60 * 60 * 24, wH5, xloc=xloc.bar_time,color = color.red , style=line.style_dashed , extend=extend.right)
+    line.delete(wh5[1])
+    wh5l = label.new(time , wH5  , "                                                                                 Weekly H5 : "+ tostring(Round_it(wH5)) , xloc=xloc.bar_time, size=size.small,textcolor=color.red, style=label.style_none ,textalign = text.align_left )
+    label.delete(wh5l[1])
+
+
+    wl3 = line.new(time, wL3 , time + 60 * 60 * 24, wL3, xloc=xloc.bar_time,color = color.green , style=line.style_dashed , extend=extend.right)
+    line.delete(wl3[1])
+    wl3l = label.new(time , wL3  , "                                                                                 Weekly L3 : "+ tostring(Round_it(wL3)) , xloc=xloc.bar_time, size=size.small,textcolor=color.green, style=label.style_none ,textalign = text.align_left )
+    label.delete(wl3l[1])
+    wl4 = line.new(time, wL4 , time + 60 * 60 * 24, wL4, xloc=xloc.bar_time,color = color.green , style=line.style_dashed , extend=extend.right)
+    line.delete(wl4[1])
+    wl4l = label.new(time , wL4  , "                                                                                 Weekly L4 : "+ tostring(Round_it(wL4)) , xloc=xloc.bar_time, size=size.small,textcolor=color.green, style=label.style_none ,textalign = text.align_left )
+    label.delete(wl4l[1])
+
+    wl5 = line.new(time, wL5 , time + 60 * 60 * 24, wL5, xloc=xloc.bar_time,color = color.green , style=line.style_dashed , extend=extend.right)
+    line.delete(wl5[1])
+    wl5l = label.new(time , wL5  , "                                                                                 Weekly L5 : "+ tostring(Round_it(wL5)) , xloc=xloc.bar_time, size=size.small,textcolor=color.green, style=label.style_none ,textalign = text.align_left )
+    label.delete(wl5l[1])
+
+
+//D
+plot(cam_showDaily and dIsLast ? dP : na, title = "Pivot", color =  dP !=dP[1] ? na : color.fuchsia, linewidth = 1, style = cam_linestyle)
+plot(cam_showDaily and dIsLast ? dPb : na, title = "Pivot Botttom", color = dPb !=dPb[1] ? na : color.fuchsia, linewidth = 1, style = cam_linestyle, display=display.none)
+plot(cam_showDaily and dIsLast ? dPt : na, title = "Pivot Top", color = dPt !=dPt[1] ? na :color.fuchsia, linewidth = 1, style = cam_linestyle, display=display.none)
+
+
+plot(cam_showDaily and dIsLast ? dH5 : na, title = "H5", color = dH5 != dH5[1] ? na : color.blue, linewidth = 1, style = cam_linestyle)
+plot(cam_showDaily and dIsLast ? dH4 : na, title = "H4", color = dH4 != dH4[1] ? na :color.red, linewidth = 1, style = cam_linestyle)
+plot(cam_showDaily and dIsLast ? dH3 : na, title = "H3", color = dH3 != dH3[1] ? na :color.red, linewidth = 1, style = cam_linestyle)
+plot(cam_showDaily and dIsLast ? dH2 : na, title = "H2", color = dH2 != dH2[1] ? na :color.red, linewidth = 1, style = cam_linestyle, display=display.none)
+plot(cam_showDaily and dIsLast ? dL2 : na, title = "L2", color = dL2 != dL2[1] ? na :color.green, linewidth = 1, style = cam_linestyle, display=display.none)
+plot(cam_showDaily and dIsLast ? dL3 : na, title = "L3", color = dL3 != dL3[1] ? na :color.green, linewidth = 1, style = cam_linestyle)
+plot(cam_showDaily and dIsLast ? dL4 : na, title = "L4", color = dL4 != dL4[1] ? na :color.green, linewidth = 1, style = cam_linestyle)
+plot(cam_showDaily and dIsLast ? dL5 : na, title = "L5", color = dL5 != dL5[1] ? na :color.blue, linewidth = 1, style = cam_linestyle)
+plot(cam_showDaily and dIsLast ? dH6 : na, title = "H6", color = dH6 != dH6[1] ? na :color.blue, linewidth = 1, style = cam_linestyle)
+plot(cam_showDaily and dIsLast ? dL6 : na, title = "L6", color = dL6 != dL6[1] ? na :color.blue, linewidth = 1, style = cam_linestyle)
+
+
+
+if cam_showTomorrow
+    tP_l = line.new(x1=time  + 86400000 / 4 , y1=tP,
+         x2=time + 86400000, y2=tP ,
+         xloc=xloc.bar_time , color = color.fuchsia, style=line.style_dashed)
+    line.delete(tP_l[1])
+    tPb_l = line.new(x1=time  + 86400000 / 4 , y1=tPb,
+         x2=time + 86400000, y2=tPb ,
+         xloc=xloc.bar_time , color = color.fuchsia, style=line.style_dashed)
+    line.delete(tPb_l[1])
+    tPt_l = line.new(x1=time  + 86400000 / 4 , y1=tPt,
+         x2=time + 86400000, y2=tPt ,
+         xloc=xloc.bar_time , color = color.fuchsia, style=line.style_dashed)
+    line.delete(tPt_l[1])
+
+    tph3_l = line.new(x1=time + 86400000 / 4, y1=tH3,
+         x2=time + 86400000, y2=tH3 ,
+         xloc=xloc.bar_time , color = color.red , style=line.style_dashed)
+    line.delete(tph3_l[1])
+
+    tpl3_l = line.new(x1=time + 86400000 / 4, y1=tL3,
+         x2=time + 86400000, y2=tL3 ,
+         xloc=xloc.bar_time , color = color.green , style=line.style_dashed)
+    line.delete(tpl3_l[1])
+
+    var label tPlabel = na
+    var label tH3label = na
+    var label tL3label = na
+    tPlabel := label.new(x = time + 86400000 / 2, y = tP, text = "                  Next Pivot " + tostring(Round_it(tP)),size=size.small,textcolor=color.fuchsia, style=label.style_none, xloc = xloc.bar_time, yloc=yloc.price)
+    label.delete(tPlabel[1])
+    tH3label := label.new(x = time + 86400000 / 2, y = tH3, text = "                  Next H3 " + tostring(Round_it(tH3)),size=size.small,textcolor=color.red, style=label.style_none, xloc = xloc.bar_time, yloc=yloc.price)
+    label.delete(tH3label[1])
+    tL3label := label.new(x = time + 86400000 / 2, y = tL3, text = "                  Next L3 " + tostring(Round_it(tL3)),size=size.small,textcolor=color.green, style=label.style_none, xloc = xloc.bar_time, yloc=yloc.price)
+    label.delete(tL3label[1])
+
+// Label for S/R
+chper = time - time[1]
+chper := change(chper) > 0 ? chper[1] : chper
+
+cam_dist = time + chper *2
+
+if cam_showlabels
+
+    if (cam_showDaily)
+        var label dPlabel = na
+        var label ds3label = na, var label ds4label = na, var label ds5label = na, var label ds6label = na
+        var label dr3label = na, var label dr4label = na, var label dr5label = na, var label dr6label = na
+
+        label.delete(dPlabel)
+        label.delete(ds3label), label.delete(ds4label), label.delete(ds5label), label.delete(ds6label)
+        label.delete(dr3label), label.delete(dr4label), label.delete(dr5label),label.delete(dr6label)
+        dPlabel := label.new(x = cam_dist, y = dP, text =  "                  P " + tostring(Round_it(dP)),textalign = text.align_left,size=size.small,textcolor=color.fuchsia, style=label.style_none, xloc = xloc.bar_time, yloc=yloc.price)
+
+        ds3label := label.new( x = cam_dist,y = dL3, text = "                  L3 " + tostring(Round_it(dL3)),textalign = text.align_left, size=size.small,textcolor=color.green, style=label.style_none, xloc = xloc.bar_time, yloc=yloc.price)
+        ds4label := label.new(x = cam_dist, y = dL4, text = "                  L4 " + tostring(Round_it(dL4)),textalign = text.align_left, size=size.small,textcolor=color.green, style=label.style_none, xloc = xloc.bar_time, yloc=yloc.price)
+        ds5label := label.new(x = cam_dist, y = dL5, text = "                  L5 " + tostring(Round_it(dL5)),textalign = text.align_left, size=size.small,textcolor=color.blue, style=label.style_none, xloc = xloc.bar_time, yloc=yloc.price)
+        ds6label := label.new(x = cam_dist, y = dL6, text = "                  L6 " + tostring(Round_it(dL6)),textalign = text.align_left, size=size.small,textcolor=color.blue, style=label.style_none, xloc = xloc.bar_time, yloc=yloc.price)
+
+        dr3label := label.new(x = cam_dist, y = dH3, text = "                  H3 " + tostring(Round_it(dH3)), textalign = text.align_left,size=size.small,textcolor=color.red, style=label.style_none, xloc = xloc.bar_time, yloc=yloc.price)
+        dr4label := label.new(x = cam_dist, y = dH4, text = "                  H4 " + tostring(Round_it(dH4)), textalign = text.align_left, size=size.small,textcolor=color.red, style=label.style_none, xloc = xloc.bar_time, yloc=yloc.price)
+        dr5label := label.new(x = cam_dist, y = dH5, text = "                  H5 " + tostring(Round_it(dH5)), textalign = text.align_left,size=size.small,textcolor=color.blue, style=label.style_none, xloc = xloc.bar_time, yloc=yloc.price)
+        dr6label := label.new(x = cam_dist, y = dH6, text = "                  H6 " + tostring(Round_it(dH6)), textalign = text.align_left,size=size.small,textcolor=color.blue, style=label.style_none, xloc = xloc.bar_time, yloc=yloc.price)
